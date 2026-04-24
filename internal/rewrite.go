@@ -145,6 +145,10 @@ func RewriteImports(data []byte, mapper func(string) (string, bool)) ([]Change, 
 // RewriteFile reads a Go file, rewrites its imports using the mapper, and writes
 // it back if any changes were made.
 func RewriteFile(filePath string, mapper func(string) (string, bool)) ([]Change, error) {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("stat file: %w", err)
+	}
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("read file: %w", err)
@@ -154,7 +158,7 @@ func RewriteFile(filePath string, mapper func(string) (string, bool)) ([]Change,
 		return nil, err
 	}
 	if len(changes) > 0 {
-		if err := os.WriteFile(filePath, newData, 0644); err != nil {
+		if err := os.WriteFile(filePath, newData, info.Mode().Perm()); err != nil {
 			return nil, fmt.Errorf("write file: %w", err)
 		}
 	}

@@ -8,6 +8,9 @@ import (
 	"strings"
 )
 
+// ProgressFunc is called when a pipeline phase changes state.
+type ProgressFunc func(phaseIndex int, status string)
+
 // Pipeline orchestrates the full privatize workflow: vendor, rewrite, copy.
 type Pipeline struct {
 	ProjectDir string
@@ -54,23 +57,37 @@ type Result struct {
 
 // Run executes the full pipeline. When dryRun is true, source files are
 // rewritten in the workspace but not copied back to the project.
-func (p *Pipeline) Run(dryRun bool) (*Result, error) {
+// The progress callback is called at each phase transition with the phase
+// index and its new status ("active" or "done").
+func (p *Pipeline) Run(dryRun bool, progress ProgressFunc) (*Result, error) {
+	progress(0, "active")
 	ws, err := CreateWorkspace(p.GoVersion, p.Config.Imports)
 	if err != nil {
 		return nil, fmt.Errorf("setup: %w", err)
 	}
-	defer ws.Cleanup()
+	progress(0, "done")
 
+	defer func() {
+		progress(4, "active")
+		ws.Cleanup()
+		progress(4, "done")
+	}()
+
+	progress(1, "active")
 	if err := ws.Vendor(); err != nil {
 		return nil, fmt.Errorf("vendor: %w", err)
 	}
+	progress(1, "done")
 
+	progress(2, "active")
 	result := &Result{}
 	if err := p.rewriteSourceImports(ws.Source, result); err != nil {
 		return nil, fmt.Errorf("rewrite source: %w", err)
 	}
+	progress(2, "done")
 
 	if !dryRun {
+		progress(3, "active")
 		copied, err := p.copySourceToProject(ws.Source)
 		if err != nil {
 			return nil, err
@@ -79,6 +96,7 @@ func (p *Pipeline) Run(dryRun bool) (*Result, error) {
 		if err := p.rewriteProjectImports(result); err != nil {
 			return nil, err
 		}
+		progress(3, "done")
 	}
 	return result, nil
 }
@@ -107,6 +125,7 @@ func (p *Pipeline) copySourceToProject(sourceDir string) ([]string, error) {
 		if _, err := os.Stat(srcDir); os.IsNotExist(err) {
 			continue
 		}
+		os.RemoveAll(dstDir)
 		if err := os.CopyFS(dstDir, os.DirFS(srcDir)); err != nil {
 			return nil, fmt.Errorf("copy %s -> %s: %w", srcDir, dstDir, err)
 		}
@@ -117,6 +136,7 @@ func (p *Pipeline) copySourceToProject(sourceDir string) ([]string, error) {
 
 // rewriteProjectImports walks the project tree and rewrites imports.
 func (p *Pipeline) rewriteProjectImports(result *Result) error {
+	seen := map[string]struct{}{}
 	return filepath.WalkDir(p.ProjectDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") {
 			return nil
@@ -125,8 +145,11 @@ func (p *Pipeline) rewriteProjectImports(result *Result) error {
 		if err != nil {
 			return err
 		}
-		for _, c := range changes {
-			result.Modified = append(result.Modified, c.File)
+		if len(changes) > 0 {
+			if _, ok := seen[path]; !ok {
+				seen[path] = struct{}{}
+				result.Modified = append(result.Modified, path)
+			}
 		}
 		return nil
 	})

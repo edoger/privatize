@@ -112,7 +112,7 @@ func TestPipelineResultDryRun(t *testing.T) {
 
 	// Run with dryRun should succeed even without workspace setup
 	// since dryRun skips the copy step
-	result, err := p.Run(true)
+	result, err := p.Run(true, func(int, string) {})
 	// The Run method will fail at CreateWorkspace since we don't have
 	// a real Go environment set up, but that's expected.
 	// We just verify the method signature works.

@@ -62,7 +62,7 @@ var runCmd = &cobra.Command{
 
 func runPlain(p *internal.Pipeline, dryRun bool) error {
 	fmt.Println("Privatizing...")
-	result, err := p.Run(dryRun)
+	result, err := p.Run(dryRun, func(int, string) {})
 	if err != nil {
 		return err
 	}
@@ -75,22 +75,33 @@ func runPlain(p *internal.Pipeline, dryRun bool) error {
 type runUI struct {
 	model    internal.RunModel
 	pipeline *internal.Pipeline
+	progress chan tea.Msg
 }
 
 func newRunUI(p *internal.Pipeline, dryRun bool) runUI {
 	return runUI{
 		model:    internal.NewRunModel(dryRun),
 		pipeline: p,
+		progress: make(chan tea.Msg, 10),
 	}
 }
 
 func (m runUI) Init() tea.Cmd {
-	return tea.Batch(m.model.Init(), m.execute())
+	return tea.Batch(m.model.Init(), m.waitForProgress(), m.execute())
+}
+
+func (m runUI) waitForProgress() tea.Cmd {
+	return func() tea.Msg {
+		return <-m.progress
+	}
 }
 
 func (m runUI) execute() tea.Cmd {
 	return func() tea.Msg {
-		result, err := m.pipeline.Run(m.model.DryRun)
+		progress := func(phaseIndex int, status string) {
+			m.progress <- internal.PhaseUpdateMsg{Index: phaseIndex, Status: status}
+		}
+		result, err := m.pipeline.Run(m.model.DryRun, progress)
 		if err != nil {
 			return errMsg{err: err}
 		}
@@ -108,6 +119,10 @@ type errMsg struct {
 
 func (m runUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case internal.PhaseUpdateMsg:
+		model, cmd := m.model.Update(msg)
+		m.model = model.(internal.RunModel)
+		return m, tea.Batch(cmd, m.waitForProgress())
 	case doneMsg:
 		m.model.Result = msg.result
 		m.model.Done = true

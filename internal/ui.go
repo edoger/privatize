@@ -10,6 +10,12 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// PhaseUpdateMsg is sent when a pipeline phase changes state.
+type PhaseUpdateMsg struct {
+	Index  int
+	Status string
+}
+
 var (
 	phaseStyle   = lipgloss.NewStyle().Bold(true)
 	doneStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
@@ -63,6 +69,10 @@ func (m RunModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
+	case PhaseUpdateMsg:
+		m.Phases[msg.Index].status = msg.Status
+		m.Current = msg.Index
+		return m, m.Spinner.Tick
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.Spinner, cmd = m.Spinner.Update(msg)
