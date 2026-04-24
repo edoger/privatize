@@ -70,3 +70,33 @@ func TestValidateOK(t *testing.T) {
 		t.Errorf("Validate() error: %v", err)
 	}
 }
+
+func TestValidatePathTraversal(t *testing.T) {
+	cases := []struct {
+		name   string
+		target string
+		err    bool
+	}{
+		{"absolute", "/usr/bin", true},
+		{"parent traversal", "../other", true},
+		{"deep traversal", "a/../../b", true},
+		{"dot", ".", true},
+		{"empty", "", true},
+		{"valid sub", "internal/pkg", false},
+		{"valid nested", "vendor/lib/sub", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &Config{
+				Rules: map[string]string{"github.com/user/pkg": tc.target},
+			}
+			err := cfg.Validate()
+			if tc.err && err == nil {
+				t.Error("expected validation error")
+			}
+			if !tc.err && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+		})
+	}
+}
