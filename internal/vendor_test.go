@@ -50,19 +50,28 @@ func TestCreateWorkspaceFiles(t *testing.T) {
 	}
 	defer os.RemoveAll(w.Dir)
 
-	modData, _ := os.ReadFile(filepath.Join(w.Dir, "go.mod"))
+	modData, err := os.ReadFile(filepath.Join(w.Dir, "go.mod"))
+	if err != nil {
+		t.Fatalf("read go.mod: %v", err)
+	}
 	if !strings.Contains(string(modData), "module _privatize_ws") {
 		t.Error("go.mod should contain module declaration")
 	}
 
-	mainData, _ := os.ReadFile(filepath.Join(w.Dir, "main.go"))
+	mainData, err := os.ReadFile(filepath.Join(w.Dir, "main.go"))
+	if err != nil {
+		t.Fatalf("read main.go: %v", err)
+	}
 	if !strings.Contains(string(mainData), `_ "github.com/user/pkg"`) {
 		t.Error("main.go should contain blank import")
 	}
 }
 
 func TestCleanup(t *testing.T) {
-	w, _ := CreateWorkspace("1.26.2", []string{"github.com/user/pkg"})
+	w, err := CreateWorkspace("1.26.2", []string{"github.com/user/pkg"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	dir := w.Dir
 	w.Cleanup()
 	if _, err := os.Stat(dir); !os.IsNotExist(err) {
