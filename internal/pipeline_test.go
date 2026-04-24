@@ -23,7 +23,7 @@ func TestPipelineMapper(t *testing.T) {
 	if !ok {
 		t.Fatal("expected match")
 	}
-	assertEqual(t, "github.com/foo/bar/pkg", got)
+	assertEqual(t, got, "github.com/foo/bar/pkg")
 
 	_, ok = p.Mapper("golang.org/x/text")
 	if ok {
@@ -50,8 +50,8 @@ exclude:
 	if err != nil {
 		t.Fatalf("NewPipeline() error: %v", err)
 	}
-	assertEqual(t, "github.com/foo/bar", p.ModulePath)
-	assertEqual(t, dir, p.ProjectDir)
+	assertEqual(t, p.ModulePath, "github.com/foo/bar")
+	assertEqual(t, p.ProjectDir, dir)
 	if p.Config == nil {
 		t.Fatal("Config should not be nil")
 	}

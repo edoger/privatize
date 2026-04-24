@@ -15,7 +15,7 @@ func TestPathRewriter_ExactMatch(t *testing.T) {
 	if !ok {
 		t.Fatal("expected match")
 	}
-	assertEqual(t, "github.com/foo/bar/internal/pkg", got)
+	assertEqual(t, got, "github.com/foo/bar/internal/pkg")
 }
 
 func TestPathRewriter_SubPackage(t *testing.T) {
@@ -27,7 +27,7 @@ func TestPathRewriter_SubPackage(t *testing.T) {
 	if !ok {
 		t.Fatal("expected match")
 	}
-	assertEqual(t, "github.com/foo/bar/internal/pkg/sub/deep", got)
+	assertEqual(t, got, "github.com/foo/bar/internal/pkg/sub/deep")
 }
 
 func TestPathRewriter_Excluded(t *testing.T) {
@@ -75,7 +75,7 @@ func TestPathRewriter_VersionedPackageExplicitRule(t *testing.T) {
 	if !ok {
 		t.Fatal("expected match")
 	}
-	assertEqual(t, "github.com/foo/bar/pkgv2", got)
+	assertEqual(t, got, "github.com/foo/bar/pkgv2")
 }
 
 func TestPathRewriter_LongestMatchWins(t *testing.T) {
@@ -90,14 +90,7 @@ func TestPathRewriter_LongestMatchWins(t *testing.T) {
 	if !ok {
 		t.Fatal("expected match")
 	}
-	assertEqual(t, "github.com/foo/bar/pkgv2/sub", got)
-}
-
-func assertEqual(t *testing.T, want, got string) {
-	t.Helper()
-	if got != want {
-		t.Errorf("got %q, want %q", got, want)
-	}
+	assertEqual(t, got, "github.com/foo/bar/pkgv2/sub")
 }
 
 func TestRewriteImports(t *testing.T) {
