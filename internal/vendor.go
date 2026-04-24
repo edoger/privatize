@@ -69,7 +69,9 @@ func (w *Workspace) Vendor() error {
 	}
 
 	for _, f := range []string{"go.mod", "go.sum", "main.go"} {
-		os.Remove(filepath.Join(w.Dir, f))
+		if err := os.Remove(filepath.Join(w.Dir, f)); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("remove %s: %w", f, err)
+		}
 	}
 
 	vendorDir := filepath.Join(w.Dir, "vendor")
@@ -110,6 +112,6 @@ func (w *Workspace) ParseModules() ([]ModuleInfo, error) {
 }
 
 // Cleanup removes the workspace directory.
-func (w *Workspace) Cleanup() {
-	os.RemoveAll(w.Dir)
+func (w *Workspace) Cleanup() error {
+	return os.RemoveAll(w.Dir)
 }

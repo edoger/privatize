@@ -51,15 +51,13 @@ type RunModel struct {
 func NewRunModel(dryRun bool) RunModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
+	phases := make([]phase, len(PhaseNames))
+	for i, name := range PhaseNames {
+		phases[i] = phase{name: name}
+	}
 	return RunModel{
-		DryRun: dryRun,
-		Phases: []phase{
-			{name: "Setup"},
-			{name: "Vendor"},
-			{name: "Rewrite"},
-			{name: "Move"},
-			{name: "Cleanup"},
-		},
+		DryRun:  dryRun,
+		Phases:  phases,
 		Spinner: s,
 	}
 }
@@ -155,19 +153,3 @@ func renderSummary(r *Result) string {
 	return b.String()
 }
 
-func RenderDryRunResult(r *Result, modulePath string) string {
-	var b strings.Builder
-	b.WriteString(headerStyle.Render("-- Import Rewrites --"))
-	b.WriteString("\n\n")
-	for _, c := range r.Rewrites {
-		fmt.Fprintf(&b, "  %s -> %s\n", c.OldPath, c.NewPath)
-	}
-	if len(r.Copied) > 0 {
-		b.WriteString("\n" + headerStyle.Render("-- Directories to Copy --"))
-		b.WriteString("\n\n")
-		for _, d := range r.Copied {
-			fmt.Fprintf(&b, "  %s\n", d)
-		}
-	}
-	return b.String()
-}

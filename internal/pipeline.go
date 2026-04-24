@@ -8,6 +8,19 @@ import (
 	"strings"
 )
 
+// Pipeline phase indices shared between Pipeline and RunModel.
+const (
+	PhaseSetup    = 0
+	PhaseVendor   = 1
+	PhaseRewrite  = 2
+	PhaseMove     = 3
+	PhaseCleanup  = 4
+)
+
+// PhaseNames holds the display names for each pipeline phase, in order.
+// PhaseNames holds the display names for each pipeline phase, in order.
+var PhaseNames = [...]string{"Setup", "Vendor", "Rewrite", "Move", "Cleanup"}
+
 // ProgressFunc is called when a pipeline phase changes state.
 type ProgressFunc func(phaseIndex int, status string)
 
@@ -60,48 +73,51 @@ type Result struct {
 // The progress callback is called at each phase transition with the phase
 // index and its new status ("active", "done", or "error").
 func (p *Pipeline) Run(dryRun bool, progress ProgressFunc) (*Result, error) {
-	progress(0, "active")
+	progress(PhaseSetup, "active")
 	ws, err := CreateWorkspace(p.GoVersion, p.Config.Imports)
 	if err != nil {
-		progress(0, "error")
+		progress(PhaseSetup, "error")
 		return nil, fmt.Errorf("setup: %w", err)
 	}
-	progress(0, "done")
+	progress(PhaseSetup, "done")
 
 	defer func() {
-		progress(4, "active")
-		ws.Cleanup()
-		progress(4, "done")
+		progress(PhaseCleanup, "active")
+		if err := ws.Cleanup(); err != nil {
+			progress(PhaseCleanup, "error")
+			return
+		}
+		progress(PhaseCleanup, "done")
 	}()
 
-	progress(1, "active")
+	progress(PhaseVendor, "active")
 	if err := ws.Vendor(); err != nil {
-		progress(1, "error")
+		progress(PhaseVendor, "error")
 		return nil, fmt.Errorf("vendor: %w", err)
 	}
-	progress(1, "done")
+	progress(PhaseVendor, "done")
 
-	progress(2, "active")
+	progress(PhaseRewrite, "active")
 	result := &Result{}
 	if err := p.rewriteSourceImports(ws.Source, result); err != nil {
-		progress(2, "error")
+		progress(PhaseRewrite, "error")
 		return nil, fmt.Errorf("rewrite source: %w", err)
 	}
-	progress(2, "done")
+	progress(PhaseRewrite, "done")
 
 	if !dryRun {
-		progress(3, "active")
+		progress(PhaseMove, "active")
 		copied, err := p.copySourceToProject(ws.Source)
 		if err != nil {
-			progress(3, "error")
+			progress(PhaseMove, "error")
 			return nil, err
 		}
 		result.Copied = copied
 		if err := p.rewriteProjectImports(result); err != nil {
-			progress(3, "error")
+			progress(PhaseMove, "error")
 			return nil, err
 		}
-		progress(3, "done")
+		progress(PhaseMove, "done")
 	}
 	return result, nil
 }
@@ -133,7 +149,9 @@ func (p *Pipeline) copySourceToProject(sourceDir string) ([]string, error) {
 		if _, err := os.Stat(srcDir); os.IsNotExist(err) {
 			continue
 		}
-		os.RemoveAll(dstDir)
+		if err := os.RemoveAll(dstDir); err != nil {
+				return nil, fmt.Errorf("remove %s: %w", dstDir, err)
+			}
 		if err := os.CopyFS(dstDir, os.DirFS(srcDir)); err != nil {
 			return nil, fmt.Errorf("copy %s -> %s: %w", srcDir, dstDir, err)
 		}
