@@ -14,6 +14,7 @@ import (
 type PhaseUpdateMsg struct {
 	Index  int
 	Status string
+	At     time.Time
 }
 
 var (
@@ -28,8 +29,9 @@ var (
 
 type phase struct {
 	name    string
-	status  string // "done", "active", "pending"
+	status  string // "done", "active", "pending", "error"
 	elapsed time.Duration
+	started time.Time
 }
 
 type RunModel struct {
@@ -71,7 +73,14 @@ func (m RunModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 	case PhaseUpdateMsg:
-		m.Phases[msg.Index].status = msg.Status
+		p := &m.Phases[msg.Index]
+		if msg.Status == "active" {
+			p.started = msg.At
+		}
+		if msg.Status == "done" && !p.started.IsZero() {
+			p.elapsed = msg.At.Sub(p.started)
+		}
+		p.status = msg.Status
 		m.Current = msg.Index
 		return m, m.Spinner.Tick
 	case spinner.TickMsg:

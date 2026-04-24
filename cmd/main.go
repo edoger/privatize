@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-isatty"
@@ -99,7 +100,7 @@ func (m runUI) waitForProgress() tea.Cmd {
 func (m runUI) execute() tea.Cmd {
 	return func() tea.Msg {
 		progress := func(phaseIndex int, status string) {
-			m.progress <- internal.PhaseUpdateMsg{Index: phaseIndex, Status: status}
+			m.progress <- internal.PhaseUpdateMsg{Index: phaseIndex, Status: status, At: time.Now()}
 		}
 		result, err := m.pipeline.Run(m.model.DryRun, progress)
 		if err != nil {
