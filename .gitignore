@@ -1,0 +1,22 @@
+# Binaries
+privatize
+*.exe
+
+# Test binary
+*.test
+
+# Go workspace
+vendor/
+
+# Project
+docs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
