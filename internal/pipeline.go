@@ -58,11 +58,12 @@ type Result struct {
 // Run executes the full pipeline. When dryRun is true, source files are
 // rewritten in the workspace but not copied back to the project.
 // The progress callback is called at each phase transition with the phase
-// index and its new status ("active" or "done").
+// index and its new status ("active", "done", or "error").
 func (p *Pipeline) Run(dryRun bool, progress ProgressFunc) (*Result, error) {
 	progress(0, "active")
 	ws, err := CreateWorkspace(p.GoVersion, p.Config.Imports)
 	if err != nil {
+		progress(0, "error")
 		return nil, fmt.Errorf("setup: %w", err)
 	}
 	progress(0, "done")
@@ -75,6 +76,7 @@ func (p *Pipeline) Run(dryRun bool, progress ProgressFunc) (*Result, error) {
 
 	progress(1, "active")
 	if err := ws.Vendor(); err != nil {
+		progress(1, "error")
 		return nil, fmt.Errorf("vendor: %w", err)
 	}
 	progress(1, "done")
@@ -82,6 +84,7 @@ func (p *Pipeline) Run(dryRun bool, progress ProgressFunc) (*Result, error) {
 	progress(2, "active")
 	result := &Result{}
 	if err := p.rewriteSourceImports(ws.Source, result); err != nil {
+		progress(2, "error")
 		return nil, fmt.Errorf("rewrite source: %w", err)
 	}
 	progress(2, "done")
@@ -90,10 +93,12 @@ func (p *Pipeline) Run(dryRun bool, progress ProgressFunc) (*Result, error) {
 		progress(3, "active")
 		copied, err := p.copySourceToProject(ws.Source)
 		if err != nil {
+			progress(3, "error")
 			return nil, err
 		}
 		result.Copied = copied
 		if err := p.rewriteProjectImports(result); err != nil {
+			progress(3, "error")
 			return nil, err
 		}
 		progress(3, "done")

@@ -21,6 +21,7 @@ var (
 	doneStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("2"))
 	activeStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("6"))
 	pendingStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
+	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("1"))
 	headerStyle  = lipgloss.NewStyle().Bold(true).Underline(true)
 	pathStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 )
@@ -98,6 +99,9 @@ func (m RunModel) View() string {
 		case "done":
 			fmt.Fprintf(&b, "  %s %-12s completed in %s\n",
 				doneStyle.Render("✓"), p.name, p.elapsed.Round(time.Millisecond))
+		case "error":
+			fmt.Fprintf(&b, "  %s %-12s failed\n",
+				errorStyle.Render("✗"), p.name)
 		case "active":
 			fmt.Fprintf(&b, "  %s %-12s %s\n",
 				activeStyle.Render(m.Spinner.View()), p.name,
