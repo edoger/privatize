@@ -109,7 +109,10 @@ func (p *Pipeline) Run(dryRun bool, progress ProgressFunc) (*Result, error) {
 // rewriteSourceImports walks the workspace source tree and rewrites imports.
 func (p *Pipeline) rewriteSourceImports(sourceDir string, result *Result) error {
 	return filepath.WalkDir(sourceDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(path, ".go") {
 			return nil
 		}
 		changes, err := RewriteFile(path, p.Mapper)
@@ -143,7 +146,10 @@ func (p *Pipeline) copySourceToProject(sourceDir string) ([]string, error) {
 func (p *Pipeline) rewriteProjectImports(result *Result) error {
 	seen := map[string]struct{}{}
 	return filepath.WalkDir(p.ProjectDir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(path, ".go") {
 			return nil
 		}
 		changes, err := RewriteFile(path, p.Mapper)
