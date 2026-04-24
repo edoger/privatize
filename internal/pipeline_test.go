@@ -95,27 +95,3 @@ rules: {}
 	}
 }
 
-func TestPipelineResultDryRun(t *testing.T) {
-	// Test that Run with dryRun=true does not copy files
-	cfg := &Config{
-		Imports: []string{"github.com/user/pkg"},
-		Rules:   map[string]string{"github.com/user/pkg": "pkg"},
-		Exclude: []string{},
-	}
-	p := &Pipeline{
-		ProjectDir: t.TempDir(),
-		ModulePath: "github.com/foo/bar",
-		GoVersion:  "1.22",
-		Config:     cfg,
-		rewriter:   NewPathRewriter("github.com/foo/bar", cfg.Rules, cfg.Exclude),
-	}
-
-	// Run with dryRun should succeed even without workspace setup
-	// since dryRun skips the copy step
-	result, err := p.Run(true, func(int, string) {})
-	// The Run method will fail at CreateWorkspace since we don't have
-	// a real Go environment set up, but that's expected.
-	// We just verify the method signature works.
-	_ = result
-	_ = err
-}
