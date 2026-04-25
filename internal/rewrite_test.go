@@ -2,6 +2,8 @@ package internal
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -179,5 +181,36 @@ func main() {}
 	}
 	if len(changes) != 2 {
 		t.Fatalf("expected 2 changes, got %d", len(changes))
+	}
+}
+
+func TestRewriteFilePreservesPermissions(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.go")
+	content := []byte(`package test
+
+import "github.com/user/pkg"
+`)
+	if err := os.WriteFile(path, content, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	mapper := func(p string) (string, bool) {
+		if p == "github.com/user/pkg" {
+			return "github.com/foo/bar/pkg", true
+		}
+		return "", false
+	}
+
+	if _, err := RewriteFile(path, mapper); err != nil {
+		t.Fatal(err)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0755 {
+		t.Errorf("permissions: got %o, want 0755", info.Mode().Perm())
 	}
 }
