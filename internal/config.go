@@ -37,7 +37,7 @@ func (c *Config) Validate() error {
 		}
 	}
 	for orig, target := range c.Rules {
-		if target == "" || !filepath.IsLocal(target) || filepath.Clean(target) == "." {
+		if !filepath.IsLocal(target) || filepath.Clean(target) == "." {
 			return fmt.Errorf("rule %q: target path must be a safe relative path, got %q", orig, target)
 		}
 	}
