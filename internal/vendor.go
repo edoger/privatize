@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -30,6 +31,9 @@ func CreateWorkspace(goVersion string, imports []string) (*Workspace, error) {
 		return nil, fmt.Errorf("create temp dir: %w", err)
 	}
 
+	if goVersion == "" {
+		goVersion = strings.TrimPrefix(runtime.Version(), "go")
+	}
 	modContent := fmt.Sprintf("module _privatize_ws\n\ngo %s\n", goVersion)
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte(modContent), 0644); err != nil {
 		os.RemoveAll(dir)
