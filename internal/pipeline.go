@@ -10,14 +10,13 @@ import (
 
 // Pipeline phase indices shared between Pipeline and RunModel.
 const (
-	PhaseSetup    = 0
-	PhaseVendor   = 1
-	PhaseRewrite  = 2
-	PhaseMove     = 3
-	PhaseCleanup  = 4
+	PhaseSetup   = 0
+	PhaseVendor  = 1
+	PhaseRewrite = 2
+	PhaseMove    = 3
+	PhaseCleanup = 4
 )
 
-// PhaseNames holds the display names for each pipeline phase, in order.
 // PhaseNames holds the display names for each pipeline phase, in order.
 var PhaseNames = [...]string{"Setup", "Vendor", "Rewrite", "Move", "Cleanup"}
 
@@ -150,8 +149,8 @@ func (p *Pipeline) copySourceToProject(sourceDir string) ([]string, error) {
 			continue
 		}
 		if err := os.RemoveAll(dstDir); err != nil {
-				return nil, fmt.Errorf("remove %s: %w", dstDir, err)
-			}
+			return nil, fmt.Errorf("remove %s: %w", dstDir, err)
+		}
 		if err := os.CopyFS(dstDir, os.DirFS(srcDir)); err != nil {
 			return nil, fmt.Errorf("copy %s -> %s: %w", srcDir, dstDir, err)
 		}
