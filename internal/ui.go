@@ -152,4 +152,3 @@ func renderSummary(r *Result) string {
 	fmt.Fprintf(&b, "  %d files modified\n", len(r.Modified))
 	return b.String()
 }
-

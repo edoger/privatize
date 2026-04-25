@@ -149,4 +149,3 @@ func TestCopySourceToProjectSkipsMissing(t *testing.T) {
 		t.Errorf("copied: got %v, want empty", copied)
 	}
 }
-
