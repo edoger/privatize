@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -38,15 +37,8 @@ func (c *Config) Validate() error {
 		}
 	}
 	for orig, target := range c.Rules {
-		if target == "" {
-			return fmt.Errorf("rule %q: target path must not be empty", orig)
-		}
-		if filepath.IsAbs(target) {
-			return fmt.Errorf("rule %q: target path must be relative, got %q", orig, target)
-		}
-		cleaned := filepath.Clean(target)
-		if cleaned == "." || strings.Contains(cleaned, "..") {
-			return fmt.Errorf("rule %q: target path must not contain \"..\" segments, got %q", orig, target)
+		if target == "" || !filepath.IsLocal(target) || filepath.Clean(target) == "." {
+			return fmt.Errorf("rule %q: target path must be a safe relative path, got %q", orig, target)
 		}
 	}
 	return nil

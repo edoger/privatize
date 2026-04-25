@@ -84,6 +84,8 @@ func TestValidatePathTraversal(t *testing.T) {
 		{"empty", "", true},
 		{"valid sub", "internal/pkg", false},
 		{"valid nested", "vendor/lib/sub", false},
+		{"valid dots in name", "internal..pkg", false},
+		{"valid triple dots", "pkg...go", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
