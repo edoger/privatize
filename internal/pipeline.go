@@ -71,7 +71,7 @@ type Result struct {
 // rewritten in the workspace but not copied back to the project.
 // The progress callback is called at each phase transition with the phase
 // index and its new status ("active", "done", or "error").
-func (p *Pipeline) Run(dryRun bool, progress ProgressFunc) (*Result, error) {
+func (p *Pipeline) Run(dryRun bool, progress ProgressFunc) (result *Result, err error) {
 	progress(PhaseSetup, "active")
 	ws, err := CreateWorkspace(p.GoVersion, p.Config.Imports)
 	if err != nil {
@@ -82,8 +82,11 @@ func (p *Pipeline) Run(dryRun bool, progress ProgressFunc) (*Result, error) {
 
 	defer func() {
 		progress(PhaseCleanup, "active")
-		if err := ws.Cleanup(); err != nil {
+		if cleanupErr := ws.Cleanup(); cleanupErr != nil {
 			progress(PhaseCleanup, "error")
+			if err == nil {
+				err = fmt.Errorf("cleanup workspace: %w", cleanupErr)
+			}
 			return
 		}
 		progress(PhaseCleanup, "done")
@@ -97,7 +100,7 @@ func (p *Pipeline) Run(dryRun bool, progress ProgressFunc) (*Result, error) {
 	progress(PhaseVendor, "done")
 
 	progress(PhaseRewrite, "active")
-	result := &Result{}
+	result = &Result{}
 	if err := p.rewriteSourceImports(ws.Source, result); err != nil {
 		progress(PhaseRewrite, "error")
 		return nil, fmt.Errorf("rewrite source: %w", err)
