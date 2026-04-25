@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -106,19 +107,29 @@ func RewriteImports(data []byte, mapper func(string) (string, bool)) ([]Change, 
 
 	var replacements []replacement
 	for _, imp := range f.Imports {
-		oldPath := strings.Trim(imp.Path.Value, `"`)
+		oldPath, err := strconv.Unquote(imp.Path.Value)
+		if err != nil {
+			return nil, nil, fmt.Errorf("unquote import path: %w", err)
+		}
 		newPath, ok := mapper(oldPath)
 		if !ok {
 			continue
 		}
 		start := fset.Position(imp.Path.ValuePos).Offset
 		end := start + len(imp.Path.Value)
-		replacements = append(replacements, replacement{
-			start:   start,
-			end:     end,
-			newPath: `"` + newPath + `"`,
-			oldPath: oldPath,
-		})
+		if imp.Path.Value[0] == '`' {
+			replacements = append(replacements, replacement{
+				start: start, end: end,
+				newPath: "`" + newPath + "`",
+				oldPath: oldPath,
+			})
+		} else {
+			replacements = append(replacements, replacement{
+				start: start, end: end,
+				newPath: strconv.Quote(newPath),
+				oldPath: oldPath,
+			})
+		}
 	}
 
 	if len(replacements) == 0 {
