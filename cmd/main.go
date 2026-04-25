@@ -6,7 +6,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/mattn/go-isatty"
+	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 
 	"github.com/edoger/privatize/internal"
@@ -52,7 +52,7 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if !isatty.IsTerminal(os.Stdout.Fd()) {
+		if !term.IsTerminal(os.Stdout.Fd()) {
 			return runPlain(p, dryRun)
 		}
 		m := newRunUI(p, dryRun)
