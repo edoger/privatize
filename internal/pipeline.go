@@ -145,8 +145,11 @@ func (p *Pipeline) copySourceToProject(sourceDir string) ([]string, error) {
 	for originalPath, relTarget := range p.Config.Rules {
 		srcDir := filepath.Join(sourceDir, originalPath)
 		dstDir := filepath.Join(p.ProjectDir, relTarget)
-		if _, err := os.Stat(srcDir); os.IsNotExist(err) {
-			continue
+		if _, err := os.Stat(srcDir); err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, fmt.Errorf("stat source %s: %w", srcDir, err)
 		}
 		if err := os.RemoveAll(dstDir); err != nil {
 			return nil, fmt.Errorf("remove %s: %w", dstDir, err)
